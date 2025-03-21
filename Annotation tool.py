@@ -1,91 +1,49 @@
 import streamlit as st
 import cv2
-import os
 import numpy as np
 import librosa
 import matplotlib.pyplot as plt
-import speech_recognition as sr
-from streamlit_player import st_player
-import tempfile
-import shutil
-import zipfile
 import ffmpeg
-
+import os
+import tempfile
+from streamlit_player import st_player
+import speech_recognition as sr
 
 def extract_audio(video_path, audio_path):
-    y, sr = librosa.load(video_path, sr=None)
-    librosa.output.write_wav(audio_path, y, sr)
-
-
-def extract_frames(video_path, output_folder):
-    cap = cv2.VideoCapture(video_path)
-    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-
-    frame_paths = []
-    for i in range(frame_count):
-        ret, frame = cap.read()
-        if not ret:
-            break
-
-        frame_path = os.path.join(output_folder, f"frame_{i}.png")
-        cv2.imwrite(frame_path, frame)
-        frame_paths.append(frame_path)
-
-    cap.release()
-    return frame_paths
-
+    try:
+        ffmpeg.input(video_path).output(audio_path).run(overwrite_output=True)
+    except ffmpeg.Error as e:
+        st.error("Error extracting audio from video: " + str(e))
 
 def plot_waveform(audio_path):
-    y, sr = librosa.load(audio_path)
+    y, sr = librosa.load(audio_path, sr=None)
     plt.figure(figsize=(10, 4))
-    plt.plot(y)
-    plt.title("Waveform")
-    plt.xlabel("Time")
+    librosa.display.waveshow(y, sr=sr)
+    plt.xlabel("Time (s)")
     plt.ylabel("Amplitude")
+    plt.title("Audio Waveform")
     st.pyplot(plt)
-
-
-def transcribe_audio(audio_path):
-    recognizer = sr.Recognizer()
-    with sr.AudioFile(audio_path) as source:
-        audio = recognizer.record(source)
-    try:
-        return recognizer.recognize_google(audio)
-    except sr.UnknownValueError:
-        return "Could not transcribe"
-
 
 def main():
     st.title("Multimodal Annotation Tool")
-    context_video = st.file_uploader("Upload Context Video", type=["mp4", "avi"])
-    utterance_video = st.file_uploader("Upload Utterance Video", type=["mp4", "avi"])
+
+    context_video = st.file_uploader("Upload Context Video", type=["mp4", "avi", "mpeg4"], key="context")
+    utterance_video = st.file_uploader("Upload Utterance Video", type=["mp4", "avi", "mpeg4"], key="utterance")
 
     if context_video and utterance_video:
-        context_temp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-        context_temp.write(context_video.read())
-        utterance_temp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-        utterance_temp.write(utterance_video.read())
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as context_temp, \
+             tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as utterance_temp:
+            context_temp.write(context_video.read())
+            utterance_temp.write(utterance_video.read())
 
-        combined_audio_path = "combined_audio.wav"
-        extract_audio(context_temp.name, combined_audio_path)
-        plot_waveform(combined_audio_path)
+            combined_audio_path = tempfile.mktemp(suffix=".wav")
+            extract_audio(context_temp.name, combined_audio_path)
 
-        transcript = transcribe_audio(combined_audio_path)
-        st.subheader("Transcript:")
-        st.write(transcript)
+            st_player(context_temp.name)
+            st_player(utterance_temp.name)
 
-        output_folder = tempfile.mkdtemp()
-        context_frames = extract_frames(context_temp.name, output_folder)
-        utterance_frames = extract_frames(utterance_temp.name, output_folder)
-
-        st.subheader("Context Frames:")
-        st.image(context_frames, width=200)
-
-        st.subheader("Utterance Frames:")
-        st.image(utterance_frames, width=200)
-
-        shutil.rmtree(output_folder)
-
+            st.write("### Extracted Audio Waveform:")
+            plot_waveform(combined_audio_path)
 
 if __name__ == "__main__":
     main()
