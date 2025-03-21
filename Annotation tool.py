@@ -4,7 +4,6 @@ import os
 import numpy as np
 import librosa
 import matplotlib.pyplot as plt
-from pydub import AudioSegment
 import speech_recognition as sr
 from streamlit_player import st_player
 import tempfile
@@ -14,13 +13,12 @@ import ffmpeg
 
 
 def extract_audio(video_path, audio_path):
-    video = AudioSegment.from_file(video_path)
-    video.export(audio_path, format="wav")
+    y, sr = librosa.load(video_path, sr=None)
+    librosa.output.write_wav(audio_path, y, sr)
 
 
 def extract_frames(video_path, output_folder):
     cap = cv2.VideoCapture(video_path)
-    fps = cap.get(cv2.CAP_PROP_FPS)
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
     frame_paths = []
@@ -34,7 +32,7 @@ def extract_frames(video_path, output_folder):
         frame_paths.append(frame_path)
 
     cap.release()
-    return frame_paths, fps
+    return frame_paths
 
 
 def plot_waveform(audio_path):
@@ -77,8 +75,8 @@ def main():
         st.write(transcript)
 
         output_folder = tempfile.mkdtemp()
-        context_frames, _ = extract_frames(context_temp.name, output_folder)
-        utterance_frames, _ = extract_frames(utterance_temp.name, output_folder)
+        context_frames = extract_frames(context_temp.name, output_folder)
+        utterance_frames = extract_frames(utterance_temp.name, output_folder)
 
         st.subheader("Context Frames:")
         st.image(context_frames, width=200)
