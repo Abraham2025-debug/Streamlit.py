@@ -1,0 +1,11 @@
+streamlit
+opencv-python-headless  # For image processing without GUI
+librosa
+numpy
+matplotlib
+streamlit-player
+moviepy  # For video and audio processing
+pydub  # Audio conversion (may need ffmpeg)
+speechrecognition  # For audio transcription
+imageio[ffmpeg]  # For handling video files
+zipfile36  # For handling zip files
