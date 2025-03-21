@@ -1,12 +1,8 @@
 streamlit
-opencv-python-headless
-librosa
+opencv-python
 numpy
+librosa
 matplotlib
-streamlit-player
-pydub
 speechrecognition
-imageio[ffmpeg]
-zipfile36
-pytube
 ffmpeg-python
+streamlit-player
