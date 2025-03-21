@@ -7,7 +7,7 @@ import os
 import json
 import zipfile
 from pathlib import Path
-from moviepy.editor import VideoFileClip
+from moviepy.editor import VideoFileClip, concatenate_videoclips
 from streamlit_player import st_player
 import speech_recognition as sr
 
@@ -16,18 +16,23 @@ st.title("Multimodal Sarcasm Annotation Tool")
 
 # Sidebar for uploads
 st.sidebar.header("Upload Files")
-video_file = st.sidebar.file_uploader("Upload Video", type=["mp4", "avi", "mov"])
+context_video = st.sidebar.file_uploader("Upload Context Video", type=["mp4", "avi", "mov"], key="context_video")
+utterance_video = st.sidebar.file_uploader("Upload Utterance Video", type=["mp4", "avi", "mov"], key="utterance_video")
 frame_folder = st.sidebar.file_uploader("Upload Extracted Frames (Folder as .zip)", type=["zip"])
 
-if video_file and frame_folder:
-    # Display video
-    st.subheader("Video Preview:")
-    st.video(video_file)
+if context_video and utterance_video and frame_folder:
+    # Load and concatenate videos
+    context_clip = VideoFileClip(context_video.name)
+    utterance_clip = VideoFileClip(utterance_video.name)
+    full_clip = concatenate_videoclips([context_clip, utterance_clip])
+
+    # Display concatenated video
+    st.subheader("Combined Video Preview (Context + Utterance):")
+    st.video(full_clip.write_videofile("combined_video.mp4", codec="libx264"))
 
     # Extract and play audio
-    video_clip = VideoFileClip(video_file.name)
     audio_path = "extracted_audio.wav"
-    video_clip.audio.write_audiofile(audio_path)
+    full_clip.audio.write_audiofile(audio_path)
 
     # Audio visualization
     y, sr_rate = librosa.load(audio_path)
