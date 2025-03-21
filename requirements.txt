@@ -3,6 +3,6 @@ opencv-python
 numpy
 librosa
 matplotlib
-speechrecognition
 ffmpeg-python
 streamlit-player
+speechrecognition
