@@ -4,9 +4,9 @@ librosa
 numpy
 matplotlib
 streamlit-player
-moviepy==1.0.3
 pydub
 speechrecognition
 imageio[ffmpeg]
 zipfile36
 pytube
+ffmpeg-python
